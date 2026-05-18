@@ -24,6 +24,8 @@ on:
         description: "Type of the version. Values are [stable, alpha, beta, rc, unknown]"
         value: ${{ jobs.determine-version.outputs.type }}
 
+  push:
+  workflow_dispatch:
 env:
   JAVA_DIST: 'temurin'
   JAVA_VERSION: 25

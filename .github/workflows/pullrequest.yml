@@ -2,6 +2,8 @@ name: Pull Request
 
 on:
   pull_request:
+  push:
+  workflow_dispatch:
 
 env:
   JAVA_DIST: 'temurin'
@@ -11,7 +13,7 @@ defaults:
   run:
     shell: bash
 
-jobs: 
+jobs:
   test:
     name: Compile and Test
     runs-on: ubuntu-latest
