@@ -24,6 +24,8 @@ on:
         description: "Type of the version. Values are [stable, alpha, beta, rc, unknown]"
         value: ${{ jobs.determine-version.outputs.type }}
 
+  push:
+  workflow_dispatch:
 env:
   JAVA_DIST: 'temurin'
   JAVA_VERSION: 25
@@ -31,7 +33,7 @@ env:
 jobs:
   determine-version:
     name: 'Determines the version following semver'
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     outputs:
       semVerNum: ${{ steps.versions.outputs.semVerNum }}
       semVerStr: ${{ steps.versions.outputs.semVerStr }}
@@ -85,3 +87,10 @@ jobs:
         uses: skymatic/semver-validation-action@7c80b6b03a18b42884761daa9862ff5683ec8c8a # v4.0.0
         with:
           version: ${{ steps.versions.outputs.semVerStr }}
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+          - macos-latest
+      fail-fast: false
