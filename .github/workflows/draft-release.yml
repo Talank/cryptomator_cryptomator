@@ -1,10 +1,7 @@
 name: Draft a Cryptomator Release
 
 on:
-  push:
-    tags:
-        - '*'
-
+  workflow_dispatch:
 env:
   JAVA_DIST: 'temurin'
   JAVA_VERSION: '25.0.2+10.0.LTS'
@@ -17,13 +14,13 @@ jobs:
   get-version:
     uses: ./.github/workflows/get-version.yml
     with:
-      version:  ''
+      version: ''
 
   create-release-draft:
     name: Compile and Test
     runs-on: ubuntu-latest
     needs: get-version
-    if: needs.get-version.outputs.versionType != 'unknown'
+    if: always()
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
@@ -68,6 +65,8 @@ jobs:
           files: |
             cryptomator-*.tar.gz.asc
 
+    strategy:
+      fail-fast: false
   build-exe-and-msi:
     needs: [get-version, create-release-draft]
     uses: ./.github/workflows/win-exe.yml

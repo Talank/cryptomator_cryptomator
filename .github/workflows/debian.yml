@@ -1,28 +1,7 @@
 name: Build Debian Package
 
 on:
-  schedule:
-    - cron: '0 22 20 * *'
   workflow_dispatch:
-    inputs:
-      semver:
-        description: 'SemVer String (e.g. 1.7.0-beta1)'
-      ppaver:
-        description: 'Base PPA Version String (e.g. 1.6.16+1.7.0~beta1) without -0ppa1'
-      dput:
-        description: 'Upload to PPA'
-        required: true
-        default: false
-        type: boolean
-  push:
-    branches-ignore:
-      - 'dependabot/**'
-    paths:
-      - '.github/workflows/debian.yml'
-      - 'dist/linux/debian/**'
-      - 'dist/linux/common/**'
-      - 'dist/linux/resources/**'
-
 env:
   JAVA_DIST: 'temurin'
   JAVA_VERSION: '25.0.2+10.0.LTS'
@@ -157,13 +136,15 @@ jobs:
             cryptomator_*_amd64.deb
             cryptomator_*.asc
       - name: Publish on PPA
-        if: inputs.dput && inputs.ppaver != ''
+        if: always()
         run: dput ppa:sebastian-stenzel/cryptomator-beta cryptomator_*_source.changes
       # If ref is a tag, also upload to GitHub Releases:
       - name: Publish Debian package on GitHub Releases
-        if: startsWith(github.ref, 'refs/tags/') && inputs.dput
+        if: always()
         env:
           GITHUB_TOKEN: ${{ secrets.CRYPTOBOT_RELEASE_TOKEN }}
         run: |
           artifacts=$(ls | grep cryptomator*.deb)
           gh release upload ${{ github.ref_name }} $artifacts
+    strategy:
+      fail-fast: false

@@ -1,53 +1,7 @@
 name: Build AppImage
 
 on:
-  schedule:
-    - cron: '0 23 20 * *'
-  workflow_call:
-    inputs:
-      semVerNum:
-        type: string
-        description: 'The Major.Minor.Patch part of the version'
-        required: true
-      revisionNum:
-        type: string
-        description: 'The revision number'
-        required: true
-      semVerSuffix:
-        type: string
-        description: 'The suffix of the version, including dash'
-        required: true
-      upload-to-draft:
-        type: boolean
-        default: true
-    outputs:
-      sha256-appimage-x64:
-        description: "SHA256 sum of the x64 appimage"
-        value: ${{ jobs.collect-sha256sums.outputs.x64-sha256sum}}
-      sha256-appimage-aarch64:
-        description: "SHA256 sum of the aarch64 appimage"
-        value: ${{ jobs.collect-sha256sums.outputs.aarch64-sha256sum}}
   workflow_dispatch:
-    inputs:
-      semVerNum:
-        description: 'The Major.Minor.Patch part of the version'
-        required: false
-      revisionNum:
-        description: 'The revision number'
-        required: false
-      semVerSuffix:
-        description: 'The suffix of the version, including dash'
-        required: false
-        default: '-SNAPSHOT'
-  push:
-    branches-ignore:
-      - 'dependabot/**'
-    paths:
-      - '.github/workflows/appimage.yml'
-      - 'dist/linux/appimage/**'
-      - 'dist/linux/common/**'
-      - 'dist/linux/resources/**'
-
 env:
   JAVA_DIST: 'temurin'
   JAVA_VERSION: '25.0.2+10.0.LTS'
@@ -104,7 +58,7 @@ jobs:
             exit 1
           fi
       - name: Set version
-        run : mvn versions:set -DnewVersion="${VERSION_NUM}${VERSION_SUFFIX}"
+        run: mvn versions:set -DnewVersion="${VERSION_NUM}${VERSION_SUFFIX}"
       - name: Run maven
         run: mvn -B clean package -Plinux -DskipTests
       - name: Patch target dir
@@ -219,7 +173,7 @@ jobs:
             cryptomator-*.asc
           if-no-files-found: error
       - name: Publish AppImage on GitHub Releases
-        if: inputs.upload-to-draft
+        if: always()
         uses: softprops/action-gh-release@153bb8e04406b158c6c84fc1615b65b24149a1fe # v2.6.1
         with:
           draft: true
