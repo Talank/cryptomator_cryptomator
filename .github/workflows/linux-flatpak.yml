@@ -1,28 +1,7 @@
 name: Build flatpak
 
 on:
-  release:
-    types: [published]
   workflow_dispatch:
-    inputs:
-      src-tag:
-        description: 'Source or Release tag'
-        required: false
-      create-pr:
-        description: 'Create Flathub PR'
-        required: false
-        type: boolean
-        default: false
-  push:
-    branches-ignore:
-      - 'dependabot/**'
-    paths:
-      - '.github/workflows/get-version.yml'
-      - '.github/workflows/linux-flatpak.yml'
-      - 'dist/linux/flatpak/**'
-      - 'dist/linux/common/**'
-      - 'dist/linux/resources/**'
-
 jobs:
   get-version:
     uses: ./.github/workflows/get-version.yml
@@ -139,7 +118,7 @@ jobs:
 
   verify-maven-sources:
     name: Verify maven sources
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     needs: [build-flatpak]
     permissions:
       contents: none
@@ -157,18 +136,25 @@ jobs:
       - name: Verify arch independent maven dependencies
         run: cmp --silent mvn-src-aarch64/maven-dependencies.yaml mvn-src-x64/maven-dependencies.yaml
 
+    strategy:
+      matrix:
+        os: &id001
+          - ubuntu-latest
+          - ubuntu-24.04-arm
+      fail-fast: false
   create-pr:
     name: Create PR for flathub
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     needs: [get-version, verify-maven-sources]
-    if: (github.event_name == 'workflow_dispatch' && inputs.create-pr ) || (github.event_name == 'release' && needs.get-version.outputs.versionType == 'stable')
+    if: always()
     permissions:
       contents: write
     env:
-      TARBALL_URL: 'https://github.com/cryptomator/cryptomator/archive/refs/tags/${{ github.event.release.tag_name || inputs.src-tag }}.tar.gz'
+      TARBALL_URL: 'https://github.com/cryptomator/cryptomator/archive/refs/tags/${{ github.event.release.tag_name || inputs.src-tag
+        }}.tar.gz'
     steps:
       - name: Check that input "src-tag" is actually a tag
-        if: github.event_name == 'workflow_dispatch'
+        if: always()
         run: |
           if [ -z "$SRC_TAG" ]; then
             echo '::error::Input "src-tag" must be set to create a Flathub PR'
@@ -251,14 +237,19 @@ jobs:
           GH_TOKEN: ${{ secrets.CRYPTOBOT_PR_TOKEN }}
       - name: Slack Notification
         uses: rtCamp/action-slack-notify@e31e87e03dd19038e411e38ae27cbad084a90661 # v2.3.3
-        if: github.event_name == 'release'
+        if: always()
         env:
           SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_CRYPTOMATOR_DESKTOP }}
           SLACK_USERNAME: 'Cryptobot'
           SLACK_ICON: ''
           SLACK_ICON_EMOJI: ':bot:'
           SLACK_CHANNEL: 'cryptomator-desktop'
-          SLACK_TITLE: "Flathub release PR created for ${{ github.event.repository.name }} ${{ github.event.release.tag_name }} created."
+          SLACK_TITLE: "Flathub release PR created for ${{ github.event.repository.name }} ${{ github.event.release.tag_name
+            }} created."
           SLACK_MESSAGE: "See <${{ steps.create-pr.outputs.FLATHUB_PR_URL }}|PR> on how to proceed."
           SLACK_FOOTER: ''
           MSG_MINIMAL: true
+    strategy:
+      matrix:
+        os: *id001
+      fail-fast: false

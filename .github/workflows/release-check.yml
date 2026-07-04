@@ -1,11 +1,7 @@
 name: Release Check
 
 on:
-  push:
-    branches:
-      - 'release/**'
-      - 'hotfix/**'
-
+  workflow_dispatch:
 defaults:
   run:
     shell: bash
@@ -17,7 +13,7 @@ env:
 jobs:
   check-preconditions:
     name: Validate commits pushed to release/hotfix branch to fulfill release requirements
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - name: Setup Java
@@ -43,7 +39,7 @@ jobs:
             exit 1
           fi
       - name: Validate release in org.cryptomator.Cryptomator.metainfo.xml file
-        if: ${{ ! (contains(github.event.head_commit.message, '[skip metadata check]') || contains(github.event.head_commit.message, '[metadata check skip]')) }}
+        if: always()
         run: |
           if ! grep -q "<release date=\".*\" version=\"${{ steps.validate-pom-version.outputs.semVerStr }}\">" dist/linux/common/org.cryptomator.Cryptomator.metainfo.xml; then
             echo "Release not set in dist/linux/common/org.cryptomator.Cryptomator.metainfo.xml"
@@ -64,3 +60,9 @@ jobs:
         run: mvn -B verify -Pdependency-check -DskipTests
         env:
           NVD_API_KEY: ${{ secrets.NVD_API_KEY }}
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+          - ubuntu-24.04-arm
+      fail-fast: false
